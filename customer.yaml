@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config-cust
+data:
+  DB_NAME: classicmodels
+  DB_USER: anthos
+  DB_HOST: anthos-mysql
+  PORT: "9000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-pass-cust
+data:
+  DB_PASS: YWJjMTIz
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-dep
+  labels:
+    app: customerapp
+    version: c1.2
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+      maxUnavailable: 1
+  replicas: 1
+  selector:
+    matchLabels:
+       app: customerapp
+       version: c1.2
+  template:
+    metadata:
+      name: customerapp
+      labels:
+        app: customerapp
+        version: c1.2
+    spec: 
+      containers:
+        - name: customerapp
+          image: gcr.io/gcdeveloper/anthos-customer:c1.2
+          ports:
+          - containerPort: 9000
+          envFrom:
+          - configMapRef:
+              name: db-config-cust
+          - secretRef:
+              name: db-pass-cust
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer
+  labels:
+    app: customerapp
+    service: customer 
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  selector:
+    app: customerapp
+  ports:
+    - name: http
+      port: 9000

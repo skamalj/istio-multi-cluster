@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config-orders
+data:
+  DB_NAME: classicmodels
+  DB_USER: anthos
+  DB_HOST: anthos-mysql
+  CLUSTER_NAME: demo
+  PROJECT_ID: gcdeveloper
+  SERVICE_NAME: orders
+  REGION: us-central1
+  PORT: "9000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-pass-orders
+data:
+  DB_PASS: YWJjMTIz
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-v1
+  labels:
+    app: ordersapp
+    version: o0.7
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+      maxUnavailable: 1
+  replicas: 1
+  selector:
+    matchLabels:
+       app: ordersapp
+       version: o0.7
+  template:
+    metadata:
+      name: ordersapp
+      labels:
+        app: ordersapp
+        version: o0.7
+    spec: 
+      containers:
+        - name: ordersapp
+          image: gcr.io/gcdeveloper/anthos-orders:o0.7
+          ports:
+            - containerPort: 9000
+              name: http
+          env:
+            - name: POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid   
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace                  
+          envFrom:
+          - configMapRef:
+                name: db-config-orders
+          - secretRef:
+                 name: db-pass-orders
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders
+  labels:
+     app: ordersapp
+     service: orders
+spec:
+  selector:
+    app: ordersapp
+  ports:
+    - name: http
+      port: 9000
+

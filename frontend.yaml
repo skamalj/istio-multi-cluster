@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-dep
+  labels:
+    app: frontendapp
+    version: f3.8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontendapp
+      version: f3.8
+  template:
+    metadata:
+      labels:
+        app: frontendapp
+        version: f3.8
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/gcdeveloper/anthos-frontend:f3.8
+        ports:
+        - containerPort: 9000
+        env:
+        - name: PORT
+          value: "9000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontendapp
+    service: frontend
+spec:
+  ports:
+  - port: 9000
+    name: http
+  selector:
+    app: frontendapp
+

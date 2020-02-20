@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config-custdetail
+data:
+  DB_NAME: classicmodels
+  DB_USER: anthos
+  DB_HOST: anthos-mysql
+  CLUSTER_NAME: demo
+  PROJECT_ID: gcdeveloper
+  SERVICE_NAME: customer-detail
+  REGION: us-central1
+  PORT: "9000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-pass-custdetail
+data:
+  DB_PASS: YWJjMTIz
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-detail-v1
+  labels:
+    app: customerdetailapp
+    version: v2.4
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+      maxUnavailable: 1
+  replicas: 1
+  selector:
+    matchLabels:
+       app: customerdetailapp
+       version: v2.4
+  template:
+    metadata:
+      name: customerdetailapp
+      labels:
+        app: customerdetailapp
+        version: v2.4
+    spec: 
+      containers:
+        - name: customerdetailapp
+          image: gcr.io/gcdeveloper/anthos-customer-detail:v2.4
+          ports:
+            - containerPort: 9000
+              name: http
+          env:
+            - name: POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid   
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace                  
+          envFrom:
+          - configMapRef:
+                name: db-config-custdetail
+          - secretRef:
+                 name: db-pass-custdetail
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-detail
+  labels:
+     app: customerdetailapp
+     service: customer-detail
+spec:
+  selector:
+    app: customerdetailapp
+  ports:
+    - name: http
+      port: 9000
+
