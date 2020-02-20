@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: orders-vs
+spec:
+  hosts:
+  - "orders"
+  http:
+    - route:
+      - destination:
+          port:
+            number: 9000
+          host: orders
+---
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "orders"
+spec:
+  targets:
+  - name: orders
+  peers:
+  - mtls: {}
+---
+apiVersion: "networking.istio.io/v1alpha3"
+kind: "DestinationRule"
+metadata:
+  name: "orders"
+spec:
+  host: "orders"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
