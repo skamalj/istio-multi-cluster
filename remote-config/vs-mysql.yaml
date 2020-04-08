@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mysql-vs
+spec:
+  hosts:
+  - "anthos-mysql"
+  http:
+    - route:
+      - destination:
+          port:
+            number: 3306
+          host: anthos-mysql.default.global
